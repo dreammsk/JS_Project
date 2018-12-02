@@ -34,12 +34,13 @@ class Actor {
         this.size = size;
         this.speed = speed;
 
-        Object.defineProperty(this, 'type', {
-            value: 'actor'
-        });
-
     }
+
     act() {};
+
+    get type() {
+        return 'actor';
+    }
 
     get left() {
         return this.pos.x;
@@ -63,7 +64,7 @@ class Actor {
         const checkObjLeft = obj.left >= this.left && obj.left < this.right;
 
         const checkPos = (obj.pos.x === this.pos.x) && (obj.pos.y === this.pos.y);
-        const checkSize = (obj.size.x * this.size.x < 0 || obj.size.y * this.size.y);
+        const checkSize = (obj.size.x * this.size.x < 0 || obj.size.y * this.size.y < 0);
         
 
         if (obj === this) {return false}
@@ -79,22 +80,124 @@ class Actor {
     
 }
 
-const position = new Vector(30, 50);
-const size = new Vector(5, 5);
+class Level {
 
-const player = new Actor(position, size);
-const moveX = new Vector(1, 0);
-const moveY = new Vector(0, 1);
-const coins = [
-  new Actor(position.plus(moveX.times(-1))),
-  new Actor(position.plus(moveY.times(-1))),
-  new Actor(position.plus(size).plus(moveX)),
-  new Actor(position.plus(size).plus(moveY))
-];
-coins.forEach(coin => {
-  const notIntersected = player.isIntersect(coin);
-  console.log(notIntersected);
-  //console.log(notIntersected);
-  console.log('player',player.left,player.right,player.top,player.bottom);
-  console.log('coin',coin.left,coin.right,coin.top,coin.bottom);
-});
+    constructor(grid=[], actors=[]) {
+        this.grid = grid;
+        this.actors = actors;
+        this.player = this.actors.find(a => a.type === 'player');
+        this.height = grid.length;
+        this.width = Math.max(0,...grid.map(a => a.length));
+        this.status = null;
+        this.finishDelay = 1;
+    }
+
+    isFinished() {
+        return (this.status != 0 && this.finishDelay < 0);
+    }
+
+    actorAt(actor) {
+        if (!(actor instanceof Actor)) throw (new Error('Переданный параметр obj в конструкторе Actor не является объектом Actor'));
+
+        return this.actors.find(a => a.isIntersect(actor));   
+    }
+
+    obstacleAt(pos, size) {
+
+        let actor = new Actor(pos, size);
+        let wallIsHit = false;
+
+        if (actor.left < 0) {return 'wall'};
+        if (actor.right > this.width) {return 'wall'};
+        if (actor.top <0) {return 'wall'};
+        if (actor.bottom > this.height) {return 'lava'};
+
+        let leftgrid = Math.floor(actor.left);
+        let rightgrid = Math.ceil(actor.right)-1;
+
+        let topgrid = Math.floor(actor.top);
+        let bottomgrid = Math.ceil(actor.bottom)-1;
+
+
+
+        for(let x = leftgrid ; x <= rightgrid ; ++x) {
+
+            let obstacle1 = this.grid[topgrid][x];
+            let obstacle2 = this.grid[bottomgrid][x];
+
+            if (obstacle1==='lava') return 'lava';
+            else if (obstacle1 === 'wall') wallIsHit = true;
+            
+            if (obstacle2==='lava') return 'lava';
+            else if (obstacle2 === 'wall') wallIsHit = true;
+
+        }
+
+        for(let y = topgrid; y <= bottomgrid; ++y) {
+
+            let obstacle1 = this.grid[y][leftgrid];
+            let obstacle2 = this.grid[y][rightgrid];
+
+            if (obstacle1==='lava') return 'lava';
+            else if (obstacle1 === 'wall') wallIsHit = true;
+            
+            if (obstacle2==='lava') return 'lava';
+            else if (obstacle2 === 'wall') wallIsHit = true;
+            
+        }
+
+        return wallIsHit ? 'wall' : undefined;
+    } 
+
+
+    removeActor(actor) {
+        if (this.actors.includes(actor)) {
+            this.actors.splice(this.actors.indexOf(actor), 1);
+        }
+    }
+
+    noMoreActors(type) {
+        return !(this.actors.find(a => a.type === type));
+    }
+
+    playerTouched(type, actor = new Actor) {
+        if (this.status !== null) return;
+
+        if (type === 'lava' || type === 'fireball') {
+            this.status = 'lost'
+        } else if (type === 'coin') {
+            this.removeActor(actor);
+            this.status = this.noMoreActors(type) ? 'won' : this.status;
+        
+        }
+    }
+
+
+}
+
+class Player extends Actor { 
+
+    get type() {
+        return 'player';
+    }
+};
+
+class Mushroom extends Actor { 
+
+    get type() {
+        return 'mushroom';
+    }
+};
+  
+
+  let player, mushroom;
+
+  player = new Player;
+  mushroom = new Mushroom;
+
+const level = new Level(undefined, [ player, mushroom ]);
+const actor = level.actorAt(player);
+
+
+
+
