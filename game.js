@@ -80,6 +80,7 @@ class Actor {
     
 }
 
+
 class Level {
 
     constructor(grid=[], actors=[]) {
@@ -173,6 +174,54 @@ class Level {
     }
 
 
+}
+
+
+class LevelParser {
+    constructor(dict = {}) {
+        this.dict = dict
+    }
+
+    actorFromSymbol(symbol) {
+        return symbol ? this.dict[symbol] : undefined;
+    }
+
+
+    obstacleFromSymbol(symbol) {
+        switch (symbol) {
+            case 'x' : return 'wall';
+            case '!' : return 'lava';
+            default : return undefined;
+        }
+    }
+
+    createGrid(grid) {
+        let arr = [];
+        for (let a of grid) {
+            arr.push(a.split('').map(b => this.obstacleFromSymbol(b)));
+        }
+        return arr;
+    }
+
+    createActors(grid = []) {
+        let arr = [];
+        for(var y = 0; y < grid.length; y++) {
+        
+            for(let x = 0; x < grid[y].length; x++) {
+                
+                let constr = this.actorFromSymbol(grid[y][x]);
+                
+                if (Actor.isPrototypeOf(constr) || Actor === constr) {
+                    arr.push(new constr(new Vector(x,y)));
+                }
+            }
+        }
+        return arr;
+    }
+
+    parse(grid) {
+        return new Level(this.createGrid(grid), this.createActors(grid));
+    }
 }
 
 class Player extends Actor { 
