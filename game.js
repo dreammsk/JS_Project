@@ -9,13 +9,12 @@ class Vector {
     }
 
     plus(vector) {
-        // не опускайте фигурные скобки и не пишите такие длинные строки
-        // так очень сложно понять что делает код
+       
         if (!(vector instanceof Vector)) {
             throw (new Error('Можно прибавлять к вектору только вектор типа Vector'));
         }
-        return new Vector(this.x + vector.x, this.y + vector.y);
         
+        return new Vector(this.x + vector.x, this.y + vector.y);
     }
 
     times(a) {
@@ -28,7 +27,6 @@ class Vector {
 class Actor {
     constructor(pos = new Vector(), size = new Vector(1, 1), speed = new Vector()) {
 
-        // см. выше
         if (!(pos instanceof Vector)) {
             throw (new Error('Переданный параметр pos в конструкторе Actor не является вектором'));
         }
@@ -65,19 +63,13 @@ class Actor {
     }
 
     isIntersect(obj) {
-        // тут всё должно быть проще
-        // если переданный объект выше, ниже, левее или правее данного,
-        // то они не пересекаются
 
         if (!(obj instanceof Actor)) {
             throw (new Error('Переданный параметр obj в конструкторе Actor не является объектом Actor'));
-        // проверяем, что объект не пересекается сам с собой
         } else if (obj === this) {
             return false;
-        // проверяем, что объект не пересекается с объектом, расположенным в той же точке, но имеющим отрицательный вектор размера
         } else if ((obj.pos.x === this.pos.x) && (obj.pos.y === this.pos.y) && (obj.size.x * this.size.x < 0 || obj.size.y * this.size.y < 0)) {
             return false;   
-        // проверяем, что объект полностью содержится в другом, тогда возвращаем true
         } else if (obj.top >= this.top && obj.bottom <= this.bottom && obj.left >= this.left && obj.right <= this.right) {
             return true;   
         } else if (obj.top >= this.bottom || obj.bottom <= this.top || obj.left >= this.right || obj.right <= this.left) {
@@ -104,13 +96,11 @@ class Level {
     }
 
     isFinished() {
-        // скобки можно убрать
-        // лучше использовать === и !==
         return this.status !== 0 && this.finishDelay < 0;
     }
 
     actorAt(actor) {
-        // см. выше
+    
         if (!(actor instanceof Actor)) {
             throw (new Error('Переданный параметр obj в конструкторе Actor не является объектом Actor'));
         }
@@ -120,52 +110,33 @@ class Level {
 
     obstacleAt(pos, size) {
 
-        // если значение присваивается переменной один раз,
-        // то лучше использовать const
-        // объект тут создаётся только для того, чтобы сложить несколько чисел,
-        // можно обойтись без него
         const actor = new Actor(pos, size);
-        let wallIsHit = false;
 
         if (actor.left < 0) {return 'wall'};
         if (actor.right > this.width) {return 'wall'};
         if (actor.top <0) {return 'wall'};
         if (actor.bottom > this.height) {return 'lava'};
 
-        let leftgrid = Math.floor(actor.left);
-        let rightgrid = Math.ceil(actor.right)-1;
+        const leftgrid = Math.floor(actor.left);
+        const rightgrid = Math.ceil(actor.right)-1;
 
-        let topgrid = Math.floor(actor.top);
-        let bottomgrid = Math.ceil(actor.bottom)-1;
-
-        // тут что-то сложное и я не уверен, что верное
-        // алгоритм тут должен быть следующий
-        // найти клетки, на которых находится переданный объект
-        // обойти их в цикле, если найдено препятствие — вернуть его
-
-        // Я проверяла только контуры объекта, но когда объекты маленькие - ваш вариант однозначно проще и лучше
+        const topgrid = Math.floor(actor.top);
+        const bottomgrid = Math.ceil(actor.bottom)-1;
 
         for(let x = leftgrid ; x <= rightgrid ; ++x) {
             for(let y = topgrid; y <= bottomgrid; ++y) {
 
                 const obstacle = this.grid[y][x];
                 
-                if (obstacle === 'lava') {
-                    return 'lava';
-                } else if (obstacle === 'wall') {
-                    wallIsHit = true;
-                }
+                if (obstacle) {
+                    return obstacle;
+                } 
             }
         }
-
-       return wallIsHit ? 'wall' : undefined;
-
     } 
 
 
     removeActor(actor) {
-        // поиск в массиве осуществляется 2 раза (includes, indexOf)
-        // можно обойтись одник
         const indexOfActor = this.actors.indexOf(actor);
         if (indexOfActor !== -1) {
             this.actors.splice(indexOfActor, 1);
@@ -173,14 +144,10 @@ class Level {
     }
 
     noMoreActors(type) {
-        // есть более подходящий метод у массива,
-        // который определяет наличие объекта по услвию
-        // и возвращается true/false
         return !(this.actors.some(a => a.type === type));
     }
 
     playerTouched(type, actor = new Actor) {
-        // фигурные скобки
         if (this.status !== null) {
             return;
         }
@@ -189,7 +156,6 @@ class Level {
             this.status = 'lost'
         } else if (type === 'coin') {
             this.removeActor(actor);
-            // лучше избегать исппользования тренарного оператора сравнения
             this.status = this.noMoreActors(type) ? 'won' : this.status;
         
         }
@@ -205,7 +171,6 @@ class LevelParser {
     }
 
     actorFromSymbol(symbol) {
-        // проверка здесь лишняя
         return this.dict[symbol];
     }
 
@@ -214,31 +179,29 @@ class LevelParser {
         switch (symbol) {
             case 'x' : return 'wall';
             case '!' : return 'lava';
-            // это лишняя строчка, функция и так возвращает undefined,
-            // если не указано иное
         }
     }
 
     createGrid(grid) {
-        // здесь можно записать ещё короче, если использовать метод map 2 раза
         return grid.map(a => a.split('').map(b => this.obstacleFromSymbol(b)));
     }
 
     createActors(grid = []) {
-        // если значение присваивается переменной 1 раз, то лучше использовать const
         const arr = [];
-        // почему тут var?
         for(let y = 0; y < grid.length; ++y) {
-        
             for(let x = 0; x < grid[y].length; ++x) {
-                
-                // const
+
                 const constr = this.actorFromSymbol(grid[y][x]);
-                // по-меому понятнее было бы проверить, что constr это функция,
-                // потом создать объект и проверить его через instanceof
-                if (Actor.isPrototypeOf(constr) || Actor === constr) {
-                    arr.push(new constr(new Vector(x,y)));
+
+                if (typeof(constr) === 'function') {
+
+                    const newObject = new constr(new Vector(x,y));
+
+                    if (newObject instanceof Actor) {
+                        arr.push(newObject);
+                    }
                 }
+
             }
         }
         return arr;
@@ -260,7 +223,6 @@ class Fireball extends Actor {
     }
 
     getNextPosition(time = 1) {
-        // здесь нужно использовать меоды класса Vector
         return this.pos.plus(this.speed.times(time));
     }
 
@@ -269,14 +231,15 @@ class Fireball extends Actor {
     }
 
     act(time, level) {
-        let newPosition = this.getNextPosition(time);
-        // === undefined можно опустить
-        // undefined это пустая ячейка, двигаться можно только если ячейка пустая. 
-        if (level.obstacleAt(newPosition, this.size) === undefined) {
-            this.pos = newPosition;
-        } else {
+
+        const newPosition = this.getNextPosition(time);
+        
+        if (level.obstacleAt(newPosition, this.size)) {
             this.handleObstacle();
+        } else {
+            this.pos = newPosition; 
         }
+
     }
 }
 
